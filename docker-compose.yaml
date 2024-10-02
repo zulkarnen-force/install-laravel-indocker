@@ -1,14 +1,19 @@
 services:
-  app:
-    container_name: app
+  laravel.app:
+    container_name: laravel.app
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: .docker/Dockerfile
     ports:
       - 8000:80
+    entrypoint: /entrypoint.sh
+    volumes:
+      - .:/var/www/html/myapp
+    depends_on:
+      - laravel.db
 
-  db:
-    container_name: db
+  laravel.db:
+    container_name: laravel.db
     image: mysql:8.4
     ports:
       - 3306:3306
@@ -17,18 +22,30 @@ services:
       MYSQL_DATABASE: laravel
       MYSQL_USER: laravel
       MYSQL_PASSWORD: laravel
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+      start_period: 5s
+      interval: 10s
 
-  phpmyadmin:
-    container_name: phpmyadmin
+  laravel.phpmyadmin:
+    container_name: laravel.phpmyadmin
     image: phpmyadmin
     ports:
-      - 8080:80
+      - 6577:80
     depends_on:
-      - db
+      - laravel.db
     environment:
-      PMA_HOST: db
+      PMA_HOST: laravel.db
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: laravel
       MYSQL_USER: laravel
       MYSQL_PASSWORD: laravel
       MEMORY_LIMIT: 300M
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost"]
+      timeout: 20s
+      retries: 10
+      start_period: 5s
+      interval: 10s
